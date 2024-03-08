@@ -1,0 +1,145 @@
+Program.Sub.ScreenSU.Start
+gui.Form1..create
+gui.Form1..caption("Form1")
+gui.Form1..size(9600,6375)
+gui.Form1..minx(0)
+gui.Form1..miny(0)
+gui.Form1..position(0,0)
+gui.Form1..event(unload,form1_unload)
+gui.Form1..alwaysontop(False)
+gui.Form1..fontname("Arial")
+gui.Form1..fontsize(8)
+gui.Form1..forecolor(0)
+gui.Form1..fontstyle(,,,,)
+gui.Form1..BackColor(-2147483633)
+gui.Form1..controlbox(True)
+gui.Form1..maxbutton(True)
+gui.Form1..minbutton(True)
+gui.Form1..mousepointer(0)
+gui.Form1..moveable(True)
+gui.Form1..sizeable(True)
+gui.Form1..ShowInTaskBar(True)
+gui.Form1..titlebar(True)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.spart.Declare(String)
+V.Local.sloc.Declare(String)
+V.Local.srev.Declare(String)
+V.Local.ssql.Declare(String)
+V.Local.sProgramPath.Declare(String)
+
+'This is a custom script for PIAD Precision Casting Corp, that will when the user selects a part on the Supply and Demand screen, display 2 text fields that will be populated with the TEXT_INFO data from their INVENTORY_MST2 table.
+'Coded by: WAW
+'Date: 01/26/2016
+
+'open the connection
+F.ODBC.Connection!conX.OpenConnection(V.Ambient.pdsn,V.Ambient.PUser,V.Ambient.PPass)
+
+'if the populate hook fires display the hidden textboxes and labels
+F.Intrinsic.Control.If(V.Caller.Hook,=,14045)
+	'set the properties of the text info 1 label
+	V.Passed.GAB-LBL-1.Set("Forecast")
+	F.Intrinsic.variable.setproperty("GAB-LBL-1","PL",147)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PT",490)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PW",60)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PH",12)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-LBL-1,"HIDE",0)
+
+	'set the properties of the text info 2 label
+	V.Passed.GAB-LBL-2.Set("Forecast (-1)")
+	F.Intrinsic.variable.setproperty("GAB-LBL-2","PL",328)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PT",490)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PW",65)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PH",12)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-LBL-2,"HIDE",0)
+	
+	'set properties for the info 1 textbox
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-1","PL",107)
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-1","PT",505)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-TEXT-1,"HIDE",0)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-TEXT-1,"LOCK",1)
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-1","PW",158)
+
+	'set the properties for the info 2 textbox
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-2","PL",288)
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-2","PT",505)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-TEXT-2,"HIDE",0)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-TEXT-2,"LOCK",1)
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-2","PW",145)
+
+F.Intrinsic.Control.EndIf
+
+'if the part changes on the supply and demand screen
+F.Intrinsic.Control.If(V.caller.Hook,=,14050)
+
+	'set the local variables
+	V.Local.spart.Set(V.Passed.000003)
+	V.Local.sloc.Set(V.Passed.000004)
+	V.Local.srev.Set(V.Passed.000099)
+
+	F.Intrinsic.String.GSSPartString(V.Local.spart,V.Local.srev,V.Local.spart)
+	
+	F.Intrinsic.String.Build("Select TEXT_INFO1, TEXT_INFO2 from V_INVENTORY_MST2 where PART = '{0}' and LOCATION = '{1}'",V.Local.spart,V.Local.sloc,V.Local.ssql)
+	F.ODBC.Connection!conX.OpenLocalRecordsetRO("rst",V.Local.ssql)
+	F.Intrinsic.Control.If(V.ODBC.conX!rst.EOF,=,False)
+		V.Passed.GAB-TEXT-1.Set(V.ODBC.conX!rst.FieldValTrim!TEXT_INFO1)
+		V.Passed.GAB-TEXT-2.Set(V.ODBC.conX!rst.FieldValTrim!TEXT_INFO2)
+	F.Intrinsic.Control.Else
+		V.Passed.GAB-TEXT-1.Set("")
+		V.Passed.GAB-TEXT-1.Set("")
+	F.Intrinsic.Control.EndIf
+
+
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(Form1_unload)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3560_Text_Info.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+program.sub.form1_unload.start
+F.Intrinsic.Control.SetErrorHandler("form1_unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'close connection and end the program
+F.ODBC.Connection!conX.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("form1_unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3560_Text_Info.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.form1_unload.end
+
+Program.Sub.Comments.Start
+${$0$}$GCG_Text_Info$}$WAW$}$1/26/2016
+Program.Sub.Comments.End
+
